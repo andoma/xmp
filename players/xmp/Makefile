@@ -2,7 +2,7 @@
 #MAIN_OBJS	= getopt.o getopt1.o options.o drivers.o main.o
 MAIN_OBJS	= sound_alsa.o terminal.o info.o options.o main.o
 MAIN_DFILES	= Makefile $(MAIN_OBJS:.o=.c)
-MAIN_PATH	= src/main
+MAIN_PATH	= players/xmp
 
 dist-main:
 	mkdir -p $(DIST)/$(MAIN_PATH)

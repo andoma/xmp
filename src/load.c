@@ -24,7 +24,7 @@
 #endif
 
 #include "convert.h"
-#include "loader.h"
+#include "format.h"
 #include "synth.h"
 
 #include "list.h"

@@ -3,6 +3,7 @@
 #define __XMP_LOADER_H
 
 #include <stdio.h>
+#include "common.h"
 
 struct format_loader {
 	char *id;

@@ -1,5 +1,3 @@
-#ifdef WIN32
-
 /* Copyright (C) 1991, 1992, 1996, 1998, 2001 Free Software Foundation, Inc.
    This file is derived from mkstemps.c from the GNU Libiberty Library
    which in turn is derived from the GNU C Library.
@@ -113,5 +111,3 @@ int mkstemp(char *template)
 	template[0] = '\0';
 	return -1;
 }
-
-#endif

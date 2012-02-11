@@ -7,8 +7,7 @@
  */
 
 #include <stdlib.h>
-#include "common.h"
-#include "loader.h"
+#include "format.h"
 
 int pw_init(void);
 
