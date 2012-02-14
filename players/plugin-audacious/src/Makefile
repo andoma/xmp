@@ -10,13 +10,12 @@ dist-src:
 	cp -RPp $(addprefix $(SRC_PATH)/,$(SRC_DFILES)) $(DIST)/$(SRC_PATH)
 
 $(SRC_PATH)/$(PLUGIN): $(LOBJS)
-	echo $(LOBJS)
 	@CMD='$(LD) -shared -o $@ $(LDFLAGS) $(LOBJS) $(LIBS)'; \
 	if [ "$(V)" -gt 0 ]; then echo $$CMD; else echo LD $@ ; fi; \
 	eval $$CMD
 
 install-plugin: $(SRC_PATH)/$(PLUGIN)
-	@echo Installing plugin in $(DESTDIR)$(BINDIR)
-	@[ -d $(DESTDIR)$(BINDIR) ] || mkdir -p $(DESTDIR)$(BINDIR)
-	@$(INSTALL_PROGRAM) $+ $(DESTDIR)$(BINDIR)
-
+	@DIR="$(DESTDIR)`pkg-config --variable=input_plugin_dir audacious`"; \
+	echo Installing plugin in $$DIR; \
+	[ -d "$$DIR" ] || mkdir -p "$$DIR"; \
+	$(INSTALL) $(SRC_PATH)/$(PLUGIN) "$$DIR"
