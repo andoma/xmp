@@ -145,16 +145,16 @@ Tuple *probe_for_tuple(const gchar *_filename, VFSFile *fd)
 	gchar *filename = g_strdup(_filename);
 	int len;
 	Tuple *tuple;
-	char name[XMP_NAME_SIZE];
+	struct xmp_test_info info;
 
 	_D("filename = %s", filename);
 	strip_vfs(filename);		/* Sorry, no VFS support */
 
-	xmp_test_module(ctx, filename, name);
+	xmp_test_module(ctx, filename, &info);
 
 	tuple = tuple_new_from_filename(filename);
-	tuple_associate_string(tuple, FIELD_TITLE, NULL, name);
-	//tuple_associate_string(tuple, FIELD_CODEC, NULL, mi.type);
+	tuple_associate_string(tuple, FIELD_TITLE, NULL, info.name);
+	tuple_associate_string(tuple, FIELD_CODEC, NULL, info.type);
 	//tuple_associate_int(tuple, FIELD_LENGTH, NULL, len);
 
 	return tuple;
