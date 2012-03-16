@@ -191,7 +191,7 @@ public class ModService extends Service {
 
 	       		notifier.notification(xmp.getModName(), queue.index());
 		       		    	
-	        	final int numClients = callbacks.beginBroadcast();
+	        	int numClients = callbacks.beginBroadcast();
 	        	for (int j = 0; j < numClients; j++) {
 	        		try {
 	    				callbacks.getBroadcastItem(j).newModCallback(
@@ -236,7 +236,16 @@ public class ModService extends Service {
 	       			checkMediaButtons();
 	       		}
 
-	       		xmp.endPlayer();     		
+	       		xmp.endPlayer();   
+	       		
+	        	numClients = callbacks.beginBroadcast();
+	        	for (int j = 0; j < numClients; j++) {
+	        		try {
+	    				callbacks.getBroadcastItem(j).endModCallback();
+	    			} catch (RemoteException e) { }
+	        	}
+	        	callbacks.finishBroadcast();
+	        	
 	       		xmp.releaseModule();
        		
 	       		audio.stop();
@@ -371,28 +380,16 @@ public class ModService extends Service {
 	    	paused = !paused;
 	    }
 	    
-	    public int time() {
-	    	return xmp.time() / 100;
+	    public void getInfo(int[] values) {
+	    	xmp.getInfo(values);
 	    }
 	
 		public void seek(int seconds) {
 			xmp.seek(seconds);
 		}
 		
-		public int getPlaySpeed() {
-			return xmp.getPlaySpeed();
-		}
-		
-		public int getPlayBpm() {
-			return xmp.getPlayBpm();
-		}
-		
-		public int getPlayPos() {
-			return xmp.getPlayPos();
-		}
-		
-		public int getPlayPat() {
-			return xmp.getPlayPat();
+		public int time() {
+			return xmp.time();
 		}
 		
 		public void getModVars(int[] vars) {
@@ -407,10 +404,18 @@ public class ModService extends Service {
 			return xmp.getModType();
 		}
 		
-		public void getChannelData(int[] volumes, int[] instruments, int[] keys) {
+		public void getChannelData(int[] volumes, int[] finalvols, int[] pans, int[] instruments, int[] keys, int[] periods) {
 			synchronized (updateData) {
 				if (updateData) {
-					xmp.getChannelData(volumes, instruments, keys);
+					xmp.getChannelData(volumes, finalvols, pans, instruments, keys, periods);
+				}
+			}
+		}
+		
+		public void getSampleData(int trigger, int ins, int key, int period, int chn, int width, byte[] buffer) {
+			synchronized (updateData) {
+				if (updateData) {
+					xmp.getSampleData(trigger, ins, key, period, chn, width, buffer);
 				}
 			}
 		}
@@ -447,6 +452,12 @@ public class ModService extends Service {
 			return xmp.getInstruments();
 		}
 		
+		public void getPatternRow(int pat, int row, byte[] rowNotes, byte[] rowInstruments) {
+			if (isPlaying) {
+				xmp.getPatternRow(pat, row, rowNotes, rowInstruments);
+			}
+		}
+
 		
 		// File management
 		

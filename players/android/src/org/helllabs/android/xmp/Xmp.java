@@ -22,12 +22,9 @@ public class Xmp {
 	public native int decGvol();
 	public native int seek(int time);
 	public native int time();
+	public native void getInfo(int[] values);
 	public native void setMixerAmp(int amp);
 	public native void setMixerMix(int mix);
-	public native int getPlaySpeed();
-	public native int getPlayBpm();
-	public native int getPlayPos();
-	public native int getPlayPat();
 	public native int getLoopCount();
 	public native void getModVars(int[] vars);
 	public native static String getVersion();
@@ -35,7 +32,9 @@ public class Xmp {
 	public native String getModType();
 	public native String[] getFormats();
 	public native String[] getInstruments();
-	public native void getChannelData(int[] volumes, int[] instruments, int[] keys);
+	public native void getChannelData(int[] volumes, int[] finalvols, int[] pans, int[] instruments, int[] keys, int[] periods);
+	public native void getPatternRow(int pat, int row, byte[] rowNotes, byte[] rowInstruments);
+	public native void getSampleData(int trigger, int ins, int key, int period, int chn, int width, byte[] buffer);
 	
 	static {
 		System.loadLibrary("xmp");
