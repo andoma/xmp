@@ -33,7 +33,6 @@ import android.widget.ViewFlipper;
 
 public class Player extends Activity {
 	static final int SETTINGS_REQUEST = 45;
-	//private String media_path;
 	private ModInterface modPlayer;	/* actual mod player */
 	private ImageButton playButton, stopButton, backButton, forwardButton;
 	private ImageButton loopButton;
@@ -73,26 +72,28 @@ public class Player extends Activity {
 	private ServiceConnection connection = new ServiceConnection() {
 		public void onServiceConnected(ComponentName className, IBinder service) {
 			modPlayer = ModInterface.Stub.asInterface(service);
-	       	flipperPage = 0;
-			
-			try {
-				modPlayer.registerCallback(playerCallback);
-			} catch (RemoteException e) { }
-			
-			if (fileArray != null && fileArray.length > 0) {
-				// Start new queue
-				playNewMod(fileArray);
-			} else {
-				// Reconnect to existing service
+			flipperPage = 0;
+
+			synchronized (modPlayer) {
 				try {
-					showNewMod(modPlayer.getFileName());
-						
-					if (modPlayer.isPaused()) {
-						pause();
-					} else {
-						unpause();
-					}
+					modPlayer.registerCallback(playerCallback);
 				} catch (RemoteException e) { }
+
+				if (fileArray != null && fileArray.length > 0) {
+					// Start new queue
+					playNewMod(fileArray);
+				} else {
+					// Reconnect to existing service
+					try {
+						showNewMod(modPlayer.getFileName());
+
+						if (modPlayer.isPaused()) {
+							pause();
+						} else {
+							unpause();
+						}
+					} catch (RemoteException e) { }
+				}
 			}
 		}
 
@@ -105,15 +106,19 @@ public class Player extends Activity {
     private PlayerCallback playerCallback = new PlayerCallback.Stub() {
     	
         public void newModCallback(String name, String[] instruments) {
-        	Log.i("Xmp Player", "Show module data");
-            showNewMod(name);
-            canChangeViewer = true;
+        	synchronized (modPlayer) {
+        		Log.i("Xmp Player", "Show module data");
+        		showNewMod(name);
+        		canChangeViewer = true;
+        	}
         }
         
         public void endModCallback() {
-        	Log.i("Xmp Player", "End of module");
-        	stopUpdate = true;
-        	canChangeViewer = false;
+        	synchronized (modPlayer) {
+        		Log.i("Xmp Player", "End of module");
+        		stopUpdate = true;
+        		canChangeViewer = false;
+        	}
         }
         
         public void endPlayCallback() {
@@ -137,6 +142,8 @@ public class Player extends Activity {
     	int oldTime = -1;
     	int before = 0, now;
     	boolean oldShowElapsed;
+    	final char[] c = new char[2];
+    	StringBuffer s = new StringBuffer();
     	
         public void run() {
         	now = (before + (frameRate * latency / 1000) + 1) % frameRate;
@@ -156,9 +163,27 @@ public class Player extends Activity {
 					if (info[before].values[5] != oldSpd || info[before].values[6] != oldBpm
 							|| info[before].values[0] != oldPos || info[before].values[1] != oldPat)
 					{
-						infoStatus.setText(String.format(
-								"Speed:%02x BPM:%02x Pos:%02x Pat:%02x",
-								info[before].values[5], info[before].values[6], info[before].values[0], info[before].values[1]));
+						// Ugly code to avoid expensive String.format()
+						
+						s.delete(0, s.length());
+						
+						s.append("Speed:");
+						Util.to02X(c, info[before].values[5]);
+						s.append(c);
+						
+						s.append(" BPM:");
+						Util.to02X(c, info[before].values[6]);
+						s.append(c);
+						
+						s.append(" Pos:");
+						Util.to02X(c, info[before].values[0]);
+						s.append(c);
+						
+						s.append(" Pat:");
+						Util.to02X(c, info[before].values[1]);
+						s.append(c);
+						
+						infoStatus.setText(s);
 	
 						oldSpd = info[before].values[5];
 						oldBpm = info[before].values[6];
@@ -169,13 +194,28 @@ public class Player extends Activity {
 						int t = info[before].time;
 						if (t < 0)
 							t = 0;
-						if (showElapsed) {
-							elapsedTime.setText(String.format("%d:%02d", t / 60,
-									t % 60));
+						
+						s.delete(0, s.length());
+						
+						if (showElapsed) {	
+							Util.to2d(c, t / 60);
+							s.append(c);
+							s.append(':');
+							Util.to02d(c, t % 60);
+							s.append(c);
+							
+							elapsedTime.setText(s);
 						} else {
 							t = totalTime - t;
-							elapsedTime.setText(String.format("-%d:%02d", t / 60,
-									t % 60));
+							
+							s.append('-');
+							Util.to2d(c, t / 60);
+							s.append(c);
+							s.append(':');
+							Util.to02d(c, t % 60);
+							s.append(c);
+							
+							elapsedTime.setText(s);
 						}
 	
 						oldTime = info[before].time;
@@ -365,8 +405,10 @@ public class Player extends Activity {
 		viewerLayout.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (canChangeViewer) {
-					changeViewer();
+				synchronized (modPlayer) {
+					if (canChangeViewer) {
+						changeViewer();
+					}
 				}
 			}
 		});
@@ -561,10 +603,7 @@ public class Player extends Activity {
 	}
 
 	void showNewMod(String fileName) {
-		//this.fileName = fileName;
-		try {
-			modPlayer.getModVars(modVars);
-		} catch (RemoteException e) { }
+
 		if (deleteDialog != null)
 			deleteDialog.cancel();
 		handler.post(showNewModRunnable);
@@ -572,51 +611,58 @@ public class Player extends Activity {
 	
 	final Runnable showNewModRunnable = new Runnable() {
 		public void run() {
-			String name, type;
-			try {
-				name = modPlayer.getModName();
-				type = modPlayer.getModType();
-			} catch (RemoteException e) {
-				name = "";
-				type = "";
+			
+			synchronized (modPlayer) {
+				try {
+					modPlayer.getModVars(modVars);
+				} catch (RemoteException e) { }
+				
+				String name, type;
+				try {
+					name = modPlayer.getModName();
+					type = modPlayer.getModType();
+				} catch (RemoteException e) {
+					name = "";
+					type = "";
+				}
+				int time = modVars[0];
+				/*int len = vars[1];
+				int pat = vars[2];
+				int chn = vars[3];
+				int ins = vars[4];
+				int smp = vars[5];*/
+				
+				totalTime = time / 1000;
+		       	seekBar.setProgress(0);
+		       	seekBar.setMax(time / 100);
+		        
+		       	flipperPage = (flipperPage + 1) % 2;
+	
+				infoName[flipperPage].setText(name);
+			    infoType[flipperPage].setText(type);
+	
+		       	titleFlipper.showNext();
+	
+		       	viewer.setup(modPlayer, modVars);
+		       	
+		       	/*infoMod.setText(String.format("Channels: %d\n" +
+		       			"Length: %d, Patterns: %d\n" +
+		       			"Instruments: %d, Samples: %d\n" +
+		       			"Estimated play time: %dmin%02ds",
+		       			chn, len, pat, ins, smp,
+		       			((time + 500) / 60000), ((time + 500) / 1000) % 60));*/
+				
+				info = new Viewer.Info[frameRate];
+				for (int i = 0; i < frameRate; i++) {
+					info[i] = viewer.new Info();
+				}
+				
+				stopUpdate = false;
+		       	if (progressThread == null || !progressThread.isAlive()) {
+		       		progressThread = new ProgressThread();
+		       		progressThread.start();
+		       	}
 			}
-			int time = modVars[0];
-			/*int len = vars[1];
-			int pat = vars[2];
-			int chn = vars[3];
-			int ins = vars[4];
-			int smp = vars[5];*/
-			
-			totalTime = time / 1000;
-	       	seekBar.setProgress(0);
-	       	seekBar.setMax(time / 100);
-	        
-	       	flipperPage = (flipperPage + 1) % 2;
-
-			infoName[flipperPage].setText(name);
-		    infoType[flipperPage].setText(type);
-
-	       	titleFlipper.showNext();
-
-	       	viewer.setup(modPlayer, modVars);
-	       	
-	       	/*infoMod.setText(String.format("Channels: %d\n" +
-	       			"Length: %d, Patterns: %d\n" +
-	       			"Instruments: %d, Samples: %d\n" +
-	       			"Estimated play time: %dmin%02ds",
-	       			chn, len, pat, ins, smp,
-	       			((time + 500) / 60000), ((time + 500) / 1000) % 60));*/
-			
-			info = new Viewer.Info[frameRate];
-			for (int i = 0; i < frameRate; i++) {
-				info[i] = viewer.new Info();
-			}
-			
-			stopUpdate = false;
-	       	if (progressThread == null || !progressThread.isAlive()) {
-	       		progressThread = new ProgressThread();
-	       		progressThread.start();
-	       	}
 		}
 	};
 	

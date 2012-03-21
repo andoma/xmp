@@ -53,35 +53,39 @@ public abstract class Viewer extends SurfaceView implements SurfaceHolder.Callba
    
     private class MyGestureDetector extends SimpleOnGestureListener {
 
-    	@Override
     	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
     		synchronized (isDown) {
     			posX += distanceX;
     			posY += distanceY;
     			
     			limitPosition();
+    			
+    			velX = velY = 0;
     		}
     		return true;
     	}
     	
-    	@Override
     	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
     		velX = velocityX / 25;
     		velY = velocityY / 25;
     		return true;
     	}
     	
-    	@Override
     	public boolean onSingleTapUp(MotionEvent e) {
     		onClick((int)e.getX(), (int)e.getY());
     		return true;
     	}
     	
-    	@Override
-    	public void onLongPress(MotionEvent e) {
+    	/*public void onLongPress(MotionEvent e) {
     		onLongClick((int)e.getX(), (int)e.getY());
-    	}    	
+    	}*/
+    	
+    	public boolean onDown(MotionEvent e) {
+    		velX = velY = 0;		// stop fling
+    		return true;
+    	}
     }
+
     
 	protected void updateScroll() {		// Hmpf, reinventing the wheel instead of using Scroller
 		posX -= velX;
@@ -130,7 +134,10 @@ public abstract class Viewer extends SurfaceView implements SurfaceHolder.Callba
 	}
 	
 	protected void onClick(int x, int y) {
-		((View)getParent()).performClick();
+		View parent = (View)getParent();
+		if (parent != null) {
+			parent.performClick();
+		}
 	}
 	
 	protected void onLongClick(int x, int y) {
