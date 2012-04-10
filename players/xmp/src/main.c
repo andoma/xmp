@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include <xmp.h>
 #include "sound.h"
 #include "common.h"
@@ -20,6 +21,19 @@ extern int optind;
 static struct sound_driver *sound;
 static int background = 0;
 static int refresh_status;
+
+
+int report(char *fmt, ...)
+{
+	va_list a;
+	int n;
+
+	va_start(a, fmt);
+	n = vfprintf(stderr, fmt, a);
+	va_end(a);
+
+	return n;
+}
 
 #ifdef HAVE_SIGNAL_H
 static void cleanup(int sig)
@@ -45,7 +59,7 @@ static void cleanup(int sig)
 #ifdef SIGTSTP
 static void sigtstp_handler(int n)
 {
-	fprintf(stderr, "\n");
+	report("\n");
 	signal(SIGTSTP, SIG_DFL);
 #ifdef HAVE_KILL
 	kill(getpid(), SIGTSTP);
@@ -71,7 +85,7 @@ static void sigcont_handler(int sig)
 
 static void show_info(int what, struct xmp_module_info *mi)
 {
-	printf("\r%78.78s\n", " ");
+	report("\r%78.78s\n", " ");
 	switch (what) {
 	case '?':
 		info_help();
@@ -155,7 +169,7 @@ int main(int argc, char **argv)
 	get_options(argc, argv, &options);
 
 	if (!options.probeonly && optind >= argc) {
-		fprintf (stderr, "%s: no modules to play\n"
+		fprintf(stderr, "%s: no modules to play\n"
 			"Use `%s --help' for more information.\n",
 			argv[0], argv[0]);
 		exit(EXIT_FAILURE);
@@ -175,11 +189,13 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Using %s\n", sound->description);
+	if (options.verbose > 0) {
+		report("Using %s\n", sound->description);
 
-	printf("Mixer set to %d Hz, %dbit, %s\n", options.rate,
+		report("Mixer set to %d Hz, %dbit, %s\n", options.rate,
 			options.format & XMP_FORMAT_8BIT ? 8 : 16,
 			options.format & XMP_FORMAT_MONO ? "mono" : "stereo");
+	}
 
 	if (options.probeonly) {
 		exit(EXIT_SUCCESS);
@@ -215,9 +231,15 @@ int main(int argc, char **argv)
 
 	skipprev = 0;
 
+	if (options.ins_path) {
+		setenv("XMP_INSTRUMENT_PATH", options.ins_path, 1);
+	}
+
 	for (first = optind; optind < argc; optind++) {
-		printf("\nLoading %s... (%d of %d)\n",
-			argv[optind], optind - first + 1, argc - first);
+		if (options.verbose > 0) {
+			report("\nLoading %s... (%d of %d)\n",
+				argv[optind], optind - first + 1, argc - first);
+		}
 
 		val = xmp_load_module(handle, argv[optind]);
 		if (val < 0) {
@@ -293,7 +315,7 @@ int main(int argc, char **argv)
 
 				sound->play(mi.buffer, mi.buffer_size);
 
-				if (!background) {
+				if (!background && !options.nocmd) {
 					read_command(handle, &control);
 
 					if (control.display) {
@@ -319,7 +341,7 @@ int main(int argc, char **argv)
 		xmp_release_module(handle);
 
 		if (!options.info) {
-			printf("\n");
+			report("\n");
 		}
 
 		if (control.skip == -1) {
