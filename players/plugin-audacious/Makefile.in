@@ -25,9 +25,9 @@ PLUGIN		= xmp.so
 
 all: plugin
 
-include src/Makefile
-
 LOBJS = $(OBJS:.o=.lo)
+
+include src/Makefile
 
 CFLAGS += -DVERSION=\"$(VERSION)\"
 
@@ -52,12 +52,7 @@ install: install-plugin
 
 depend:
 	@echo Building dependencies...
-	@echo > $@
-	@for i in $(OBJS) do \
-	    c="$${i%.o}.c"; l="$${i%.o}.lo"; \
-	    $(CC) $(CFLAGS) -MM $$c | \
-		sed "s!^.*\.o:!$$i $$l:!" >> $@ ; \
-	done
+	@$(CC) $(CFLAGS) -MM $(LOBJS) > $@
 	    
 dist: dist-prepare dist-subdirs
 

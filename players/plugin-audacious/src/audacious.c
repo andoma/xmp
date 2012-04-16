@@ -133,7 +133,7 @@ static int is_our_file_from_vfs(const char* _filename, VFSFile *vfsfile)
 	_D("filename = %s", filename);
 	strip_vfs(filename);		/* Sorry, no VFS support */
 
-	ret = (xmp_test_module(ctx, filename, NULL) == 0);
+	ret = (xmp_test_module(filename, NULL) == 0);
 
 	g_free(filename);
 	return ret;
@@ -150,7 +150,7 @@ Tuple *probe_for_tuple(const gchar *_filename, VFSFile *fd)
 	_D("filename = %s", filename);
 	strip_vfs(filename);		/* Sorry, no VFS support */
 
-	xmp_test_module(ctx, filename, &info);
+	xmp_test_module(filename, &info);
 
 	tuple = tuple_new_from_filename(filename);
 	tuple_associate_string(tuple, FIELD_TITLE, NULL, info.name);
@@ -202,7 +202,7 @@ static gboolean play(InputPlayback *ipb, const gchar *_filename, VFSFile *file, 
 		goto PLAY_ERROR_1;
 	}
 
-	xmp_player_start(ctx, 0, 44100, 2);
+	xmp_player_start(ctx, 44100, 0);
 	xmp_player_get_info(ctx, &info);
 
 	tuple = tuple_new_from_filename(filename);
