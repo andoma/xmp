@@ -167,10 +167,14 @@ int main(int argc, char **argv)
 
 	memset(&options, 0, sizeof (struct options));
 	memset(&control, 0, sizeof (struct control));
+
+	/* set defaults */
 	options.verbose = 1;
 	options.rate = 44100;
 	options.mix = -1;
 	options.driver_id = NULL;
+	options.interp = XMP_INTERP_LINEAR;
+	options.dsp = XMP_DSP_LOWPASS;
 
 	get_options(argc, argv, &options);
 
@@ -202,10 +206,10 @@ int main(int argc, char **argv)
 		report("Using %s\n", sound->description);
 
 		report("Mixer set to %d Hz, %dbit, %s%s%s\n", options.rate,
-		    options.format & XMP_MIX_8BIT ? 8 : 16,
-		    options.format & XMP_MIX_NEAREST ? "" : "interpolated ",
-		    options.format & XMP_MIX_MONO ? "mono" : "stereo",
-		    options.format & XMP_MIX_NOFILTER ? " (no filter)" : "");
+		    options.format & XMP_FORMAT_8BIT ? 8 : 16,
+		    /*options.format & XMP_FORMAT_NEAREST ? "" : "interpolated ",*/"FIXME",
+		    options.format & XMP_FORMAT_MONO ? "mono" : "stereo",
+		    /*options.format & XMP_FORMAT_NOFILTER ? " (no filter)" :*/ "");
 	}
 
 	if (options.probeonly) {
@@ -247,7 +251,7 @@ int main(int argc, char **argv)
 	}
 
 	if (options.mix >= 0) {
-		xmp_mixer_mix(handle, options.mix);
+		xmp_mixer_set(handle, XMP_MIXER_MIX, options.mix);
 	}
 
 	lf_flag = 0;
@@ -297,6 +301,9 @@ int main(int argc, char **argv)
 		control.loop = options.loop;
 		
 		if (xmp_player_start(handle, options.rate, options.format) == 0) {
+			xmp_mixer_set(handle, XMP_MIXER_INTERP, options.interp);
+			xmp_mixer_set(handle, XMP_MIXER_DSP, options.dsp);
+
 			xmp_set_position(handle, options.start);
 
 			/* Mute channels */
