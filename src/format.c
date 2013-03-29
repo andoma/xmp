@@ -8,7 +8,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "loaders/prowizard/prowiz.h"
 #include "format.h"
 
 extern const struct format_loader xm_loader;
@@ -48,7 +47,6 @@ extern const struct format_loader gtk_loader;
 extern const struct format_loader dtt_loader;
 extern const struct format_loader mgt_loader;
 extern const struct format_loader arch_loader;
-extern const struct format_loader sym_loader;
 extern const struct format_loader digi_loader;
 extern const struct format_loader dbm_loader;
 extern const struct format_loader emod_loader;
@@ -69,7 +67,6 @@ extern const struct format_loader mfp_loader;
 extern const struct format_loader alm_loader;
 extern const struct format_loader polly_loader;
 extern const struct format_loader stc_loader;
-extern const struct format_loader pw_loader;
 
 extern const struct pw_format *const pw_format[];
 
@@ -111,7 +108,6 @@ const struct format_loader *const format_loader[] = {
 	&dtt_loader,
 	&mgt_loader,
 	&arch_loader,
-	&sym_loader,
 	&digi_loader,
 	&dbm_loader,
 	&emod_loader,
@@ -132,7 +128,6 @@ const struct format_loader *const format_loader[] = {
 	&alm_loader,
 	&polly_loader,
 	&stc_loader,
-	&pw_loader,
 	NULL
 };
 
@@ -144,17 +139,9 @@ char **format_list()
 
 	if (_farray[0] == NULL) {
 		for (count = i = 0; format_loader[i] != NULL; i++) {
-			if (strcmp(format_loader[i]->name, "prowizard") == 0) {
-				for (j = 0; pw_format[j] != NULL; j++) {
-					if (count >= MAX_FORMATS)
-						return NULL;
-					_farray[count++] = pw_format[j]->name;
-				}
-			} else {
-				if (count >= MAX_FORMATS)
-					return NULL;
-				_farray[count++] = format_loader[i]->name;
-			}
+                        if (count >= MAX_FORMATS)
+                                return NULL;
+                        _farray[count++] = format_loader[i]->name;
 		}
 
 		if (count >= MAX_FORMATS)

@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#include <stdio.h>
+
 #define XMP_VERSION "4.0.0"
 #define XMP_VERCODE 0x040000
 #define XMP_VER_MAJOR 4
@@ -273,7 +275,9 @@ EXPORT extern const unsigned int xmp_vercode;
 EXPORT xmp_context xmp_create_context  (void);
 EXPORT void        xmp_free_context    (xmp_context);
 EXPORT int         xmp_test_module     (char *, struct xmp_test_info *);
+EXPORT int         xmp_test_modulef    (FILE *, struct xmp_test_info *);
 EXPORT int         xmp_load_module     (xmp_context, char *);
+EXPORT int         xmp_load_modulef    (xmp_context, FILE *, char *, size_t size);
 EXPORT void        xmp_scan_module     (xmp_context);
 EXPORT void        xmp_release_module  (xmp_context);
 EXPORT int         xmp_start_player    (xmp_context, int, int);

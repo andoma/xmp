@@ -34,7 +34,6 @@ extern struct format_loader *format_loader[];
 void load_prologue(struct context_data *);
 void load_epilogue(struct context_data *);
 
-
 struct tmpfilename {
 	char *name;
 	struct list_head list;
@@ -107,6 +106,8 @@ static void set_md5sum(FILE *f, unsigned char *digest)
 
 	memcpy(digest, ctx.digest, 16);
 }
+
+#if 0
 
 static int decrunch(struct list_head *head, FILE **f, char **s, int ttl)
 {
@@ -400,14 +401,37 @@ static void unlink_tempfiles(struct list_head *head)
 		free(li);
 	}
 }
+#endif
+
+int xmp_test_modulef(FILE *f, struct xmp_test_info *info)
+{
+	char buf[XMP_NAME_SIZE];
+	int i;
+
+	if (info != NULL) {
+		*info->name = 0;	/* reset name prior to testing */
+		*info->type = 0;	/* reset type prior to testing */
+	}
+
+	for (i = 0; format_loader[i] != NULL; i++) {
+		fseek(f, 0, SEEK_SET);
+		if (format_loader[i]->test(f, buf, 0) == 0) {
+			if (info != NULL) {
+				strncpy(info->name, buf, XMP_NAME_SIZE);
+				strncpy(info->type, format_loader[i]->name,
+							XMP_NAME_SIZE);
+			}
+			return 0;
+		}
+	}
+        return -XMP_ERROR_FORMAT;
+}
 
 
 int xmp_test_module(char *path, struct xmp_test_info *info)
 {
 	FILE *f;
 	struct stat st;
-	char buf[XMP_NAME_SIZE];
-	int i;
 	struct list_head tmpfiles_list;
 	int ret = -XMP_ERROR_FORMAT;;
 
@@ -423,12 +447,12 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 		return -XMP_ERROR_SYSTEM;
 
 	INIT_LIST_HEAD(&tmpfiles_list);
-
+#if 0
 	if (decrunch(&tmpfiles_list, &f, &path, DECRUNCH_MAX) < 0) {
 		ret = -XMP_ERROR_DEPACK;
 		goto err;
 	}
-
+#endif
 	if (fstat(fileno(f), &st) < 0) {/* get size after decrunch */
 		ret = -XMP_ERROR_DEPACK;
 		goto err;
@@ -439,37 +463,11 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 		goto err;
 	}
 
-	if (info != NULL) {
-		*info->name = 0;	/* reset name prior to testing */
-		*info->type = 0;	/* reset type prior to testing */
-	}
-
-	for (i = 0; format_loader[i] != NULL; i++) {
-		fseek(f, 0, SEEK_SET);
-		if (format_loader[i]->test(f, buf, 0) == 0) {
-			int is_prowizard = 0;
-
-			if (strcmp(format_loader[i]->name, "prowizard") == 0) {
-				fseek(f, 0, SEEK_SET);
-				pw_test_format(f, buf, 0, info);
-				is_prowizard = 1;
-			}
-
-			fclose(f);
-
-			unlink_tempfiles(&tmpfiles_list);
-			if (info != NULL && !is_prowizard) {
-				strncpy(info->name, buf, XMP_NAME_SIZE);
-				strncpy(info->type, format_loader[i]->name,
-							XMP_NAME_SIZE);
-			}
-			return 0;
-		}
-	}
+        ret = xmp_test_modulef(f, info);
 
     err:
 	fclose(f);
-	unlink_tempfiles(&tmpfiles_list);
+//	unlink_tempfiles(&tmpfiles_list);
 	return ret;
 }
 
@@ -493,47 +491,17 @@ static void split_name(char *s, char **d, char **b)
 	}
 }
 
-int xmp_load_module(xmp_context opaque, char *path)
+
+int xmp_load_modulef(xmp_context opaque, FILE *f, char *path, size_t size)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct module_data *m = &ctx->m;
-	FILE *f;
 	int i;
-	struct stat st;
-	struct list_head tmpfiles_list;
 	int test_result, load_result;
-
-	D_(D_WARN "path = %s", path);
-
-	if (stat(path, &st) < 0)
-		return -XMP_ERROR_SYSTEM;
-
-	if (S_ISDIR(st.st_mode)) {
-		errno = EISDIR;
-		return -XMP_ERROR_SYSTEM;
-	}
-
-	if ((f = fopen(path, "rb")) == NULL)
-		return -XMP_ERROR_SYSTEM;
-
-	INIT_LIST_HEAD(&tmpfiles_list);
-
-	D_(D_INFO "decrunch");
-	if (decrunch(&tmpfiles_list, &f, &path, DECRUNCH_MAX) < 0)
-		goto err_depack;
-
-	if (fstat(fileno(f), &st) < 0)
-		goto err_depack;
-
-	if (st.st_size < 256) {			/* get size after decrunch */
-		fclose(f);
-		unlink_tempfiles(&tmpfiles_list);
-		return -XMP_ERROR_FORMAT;
-	}
 
 	split_name(path, &m->dirname, &m->basename);
 	m->filename = path;	/* For ALM, SSMT, etc */
-	m->size = st.st_size;
+	m->size = size;
 
 	load_prologue(ctx);
 
@@ -552,8 +520,7 @@ int xmp_load_module(xmp_context opaque, char *path)
 
 	set_md5sum(f, m->md5);
 
-	fclose(f);
-	unlink_tempfiles(&tmpfiles_list);
+//	fclose(f);
 
 	if (test_result < 0) {
 		free(m->basename);
@@ -576,10 +543,48 @@ int xmp_load_module(xmp_context opaque, char *path)
 
 	return 0;
 
-    err_depack:
+}
+
+
+int xmp_load_module(xmp_context opaque, char *path)
+{
+	FILE *f;
+	struct stat st;
+	struct list_head tmpfiles_list;
+        int ret = -XMP_ERROR_DEPACK;
+	D_(D_WARN "path = %s", path);
+
+	if (stat(path, &st) < 0)
+		return -XMP_ERROR_SYSTEM;
+
+	if (S_ISDIR(st.st_mode)) {
+		errno = EISDIR;
+		return -XMP_ERROR_SYSTEM;
+	}
+
+	if ((f = fopen(path, "rb")) == NULL)
+		return -XMP_ERROR_SYSTEM;
+
+	INIT_LIST_HEAD(&tmpfiles_list);
+#if 0
+	D_(D_INFO "decrunch");
+	if (decrunch(&tmpfiles_list, &f, &path, DECRUNCH_MAX) < 0)
+		goto err_depack;
+#endif
+	if (fstat(fileno(f), &st) < 0)
+		goto err_depack;
+
+	if (st.st_size < 256) {			/* get size after decrunch */
+		fclose(f);
+//		unlink_tempfiles(&tmpfiles_list);
+		return -XMP_ERROR_FORMAT;
+	}
+
+        ret = xmp_load_modulef(opaque, f, path, st.st_size);
+err_depack:
 	fclose(f);
-	unlink_tempfiles(&tmpfiles_list);
-	return -XMP_ERROR_DEPACK;
+//	unlink_tempfiles(&tmpfiles_list);
+        return ret;
 }
 
 void xmp_release_module(xmp_context opaque)
