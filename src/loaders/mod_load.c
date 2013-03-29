@@ -183,7 +183,7 @@ static int mod_load(struct module_data *m, FILE *f, const int start)
     struct xmp_event *event;
     struct mod_header mh;
     uint8 mod_event[4];
-    char *x, pathname[PATH_MAX] = "", *tracker = "";
+    char *x, pathname[1024] = "", *tracker = "";
     int detected = 0;
     char magic[8], idbuffer[32];
     int ptkloop = 0;			/* Protracker loop */

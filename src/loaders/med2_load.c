@@ -161,7 +161,7 @@ int med2_load(struct module_data *m, FILE *f, const int start)
 	D_(D_INFO "Instruments    : %d ", mod->ins);
 
 	for (i = 0; i < 31; i++) {
-		char path[PATH_MAX];
+		char path[1024];
 		char ins_path[256];
 		char name[256];
 		FILE *s = NULL;
@@ -173,7 +173,7 @@ int med2_load(struct module_data *m, FILE *f, const int start)
 				(char *)mod->xxi[i].name, name, 256);
 
 		if (found) {
-			snprintf(path, PATH_MAX, "%s/%s", ins_path, name);
+			snprintf(path, sizeof(path), "%s/%s", ins_path, name);
 			if ((s = fopen(path, "rb"))) {
 				fstat(fileno(s), &stat);
 				mod->xxs[i].len = stat.st_size;

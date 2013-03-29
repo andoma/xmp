@@ -88,7 +88,7 @@ static int mfp_load(struct module_data *m, FILE *f, const int start)
 	int i, j, k, x, y;
 	struct xmp_event *event;
 	struct stat st;
-	char smp_filename[PATH_MAX];
+	char smp_filename[1024];
 	FILE *s;
 	int size1, size2;
 	int pat_addr, pat_table[128][4];
@@ -198,7 +198,7 @@ static int mfp_load(struct module_data *m, FILE *f, const int start)
 	m->basename[0] = 's';
 	m->basename[1] = 'm';
 	m->basename[2] = 'p';
-	snprintf(smp_filename, PATH_MAX, "%s%s", m->dirname, m->basename);
+	snprintf(smp_filename, sizeof(smp_filename), "%s%s", m->dirname, m->basename);
 	if (stat(smp_filename, &st) < 0) {
 		/* handle .set filenames like in Kid Chaos*/
 		char *x;
