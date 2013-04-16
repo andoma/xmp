@@ -412,7 +412,6 @@ static int mod_load(struct module_data *m, FILE *f, const int start)
 
 		if (mod->chn == 4) {
 	    	    tracker = "Protracker";
-printf("asd\n");
 		} else if (mod->chn == 6 || mod->chn == 8) {
 	    	    tracker = "FastTracker 1.01?";
 		    ptkloop = 0;
