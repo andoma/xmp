@@ -1,5 +1,6 @@
 #include <string.h>
 #include <fnmatch.h>
+#include <stdint.h>
 #include "common.h"
 #include "synth.h"
 
@@ -116,3 +117,20 @@ void load_epilogue(struct context_data *ctx)
 	scan_sequences(ctx);
 }
 
+
+int64_t
+fsize(FILE *f)
+{
+	int64_t cur = ftello(f);
+	
+	if(fseek(f, 0, SEEK_END)) {
+		fseeko(f, cur, SEEK_SET); // Try to repair
+		return -1;
+	}
+	
+	int64_t size = ftello(f);
+
+	fseeko(f, cur, SEEK_SET); // Try to repair
+	printf("The size is %ld\n", size);
+	return size;
+}

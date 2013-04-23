@@ -17,7 +17,6 @@
 
 #include "loader.h"
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 
@@ -63,7 +62,6 @@ static int alm_load(struct module_data *m, FILE *f, const int start)
     int i, j;
     struct alm_file_header afh;
     struct xmp_event *event;
-    struct stat stat;
     uint8 b;
     char *basename;
     char filename[NAME_SIZE];
@@ -135,9 +133,9 @@ static int alm_load(struct module_data *m, FILE *f, const int start)
 	if (!(mod->xxi[i].nsm = (s != NULL)))
 	    continue;
 
-	fstat (fileno (s), &stat);
+	int64_t len = fsize(s);
 	b = read8(s);		/* Get first octet */
-	mod->xxs[i].len = stat.st_size - 5 * !b;
+	mod->xxs[i].len = len - 5 * !b;
 
 	if (!b) {		/* Instrument with header */
 	    mod->xxs[i].lps = read16l(f);

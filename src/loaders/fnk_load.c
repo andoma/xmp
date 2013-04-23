@@ -7,7 +7,6 @@
  */
 
 #include <sys/types.h>
-#include <sys/stat.h>
 #include "loader.h"
 
 #define MAGIC_Funk	MAGIC4('F','u','n','k')
@@ -26,7 +25,6 @@ static int fnk_test(FILE *f, char *t, const int start)
 {
     uint8 a, b;
     int size;
-    struct stat st;
 
     if (read32b(f) != MAGIC_Funk)
 	return -1;
@@ -46,8 +44,7 @@ static int fnk_test(FILE *f, char *t, const int start)
     if (size < 1024)
 	return -1;
 
-    fstat(fileno(f), &st);
-    if (size != st.st_size)
+    if (size != fsize(f))
 	return -1;
 
     read_title(f, t, 0);
