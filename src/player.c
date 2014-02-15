@@ -281,7 +281,8 @@ static void process_volume(struct context_data *ctx, int chn, int t, int act)
 				((int)finalvol * 0x40 / m->volbase)) >> 18;
 
 	/* Apply channel volume */
-	finalvol = finalvol * 100 / p->channel_vol[chn];
+        if(p->channel_vol[chn])
+                finalvol = finalvol * 100 / p->channel_vol[chn];
 
 	/* Volume translation table (for PTM, ARCH, COCO) */
 	if (m->vol_table) {
